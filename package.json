@@ -4,6 +4,9 @@
   "description": "HPI reading / extraction tool for the JavaScript environment",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com/"
+  },
   "scripts": {
     "start": "node dist/main.js",
     "build": "tsc",
@@ -18,14 +21,14 @@
     "url": "git@github.com:clokken/hpi-lib.git"
   },
   "dependencies": {
-    "@types/node": "^10.9.1",
     "pako": "^1.0.6"
   },
   "devDependencies": {
     "@types/jest": "^23.3.1",
+    "@types/node": "^14.0.4",
     "@types/pako": "^1.0.0",
     "del": "^3.0.0",
-    "gulp": "^3.9.1",
+    "gulp": "^4.0.2",
     "gulp-exec": "^3.0.2",
     "gulp-sequence": "^1.0.0",
     "gulp-sourcemaps": "^2.6.4",
@@ -33,10 +36,10 @@
     "gulp-uglify": "^3.0.0",
     "gulp-uglify-es": "^1.0.1",
     "gulp-util": "^3.0.8",
-    "jest": "^23.5.0",
+    "jest": "^26.0.1",
     "shelljs": "^0.8.1",
-    "ts-jest": "^23.1.4",
-    "typescript": "^2.7.2"
+    "ts-jest": "^26.0.0",
+    "typescript": "^3.9.3"
   },
   "author": "clokken",
   "license": "MIT",
