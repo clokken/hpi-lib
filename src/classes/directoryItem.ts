@@ -1,5 +1,6 @@
 import { HapiItem } from "./hapiItem";
 import { DirectoryStruct } from "./structs";
+import { EntryItem } from './entryItem';
 
 export enum ItemFilter {
     ANY,
@@ -32,6 +33,10 @@ export class DirectoryItem extends HapiItem {
         let children = this.children.map(child => child.debugPrint()).join('');
         return me + children;
     }
+
+    findChildren(name: string, limit?: number, filter?: ItemFilter.ENTRY_ONLY, recurseDown?: boolean): EntryItem[];
+    findChildren(name: string, limit?: number, filter?: ItemFilter.DIRECTORY_ONLY, recurseDown?: boolean): DirectoryItem[];
+    findChildren(name: string, limit?: number, filter?: ItemFilter, recurseDown?: boolean): HapiItem[];
 
     findChildren(name: string, limit: number = -1, filter = ItemFilter.ANY, recurseDown = true): HapiItem[] {
         let result: HapiItem[] = [];
@@ -83,6 +88,10 @@ export class DirectoryItem extends HapiItem {
 
         return result;
     }
+
+    findChild(name: string, filter?: ItemFilter.ENTRY_ONLY, recurseDown?: boolean): EntryItem;
+    findChild(name: string, filter?: ItemFilter.DIRECTORY_ONLY, recurseDown?: boolean): DirectoryItem;
+    findChild(name: string, filter?: ItemFilter, recurseDown?: boolean): HapiItem;
 
     findChild(name: string, filter = ItemFilter.ANY, recurseDown = true): HapiItem {
         let result = this.findChildren(name, 1, filter, recurseDown);
