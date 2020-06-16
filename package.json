@@ -13,8 +13,7 @@
     "watch": "gulp watch",
     "test": "jest",
     "testWithCoverage": "jest --coverage",
-    "prepare": "npm run build",
-    "prepublishOnly": "npm run test"
+    "prepare": "npm run build"
   },
   "repository": {
     "type": "git",
