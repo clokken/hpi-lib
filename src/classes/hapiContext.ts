@@ -60,7 +60,7 @@ export class HapiContext {
         let filePos = item.struct.get('dataStartPtr');
 
         if (item.struct.get('compressedSize')) {
-            let output = Buffer.alloc(flatSize + 1);
+            let output = Buffer.alloc(flatSize);
             let outSize = 0;
 
             while (outSize < flatSize) {
@@ -83,7 +83,7 @@ export class HapiContext {
             return output;
         }
         else {
-            return this.file.slice(filePos, filePos + flatSize + 1);
+            return this.file.slice(filePos, filePos + flatSize);
         }
     }
 
