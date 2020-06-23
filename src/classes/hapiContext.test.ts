@@ -2,18 +2,24 @@ import * as Fs from 'fs'
 import * as Path from 'path';
 import * as Yauzl from 'yauzl';
 import * as Crypto from 'crypto';
+import * as del from 'del';
 import { HapiContext } from './hapiContext';
 import { ItemFilter } from './directoryItem';
+import { EntryItem } from './entryItem';
 
 //:: Globals ----------------------------------------------
 
-const HPI = Path.join(process.cwd(), 'test/v3rocket.hpi');
-let bytes = Fs.readFileSync(HPI);
+const TEST_PATH = Path.join(process.cwd(), 'test');
+const TEMP_PATH = Path.join(TEST_PATH, 'temp');
+const HPI_PATH = Path.join(TEST_PATH, 'v3rocket.hpi');
+let bytes = Fs.readFileSync(HPI_PATH);
 let hapi: HapiContext;
 
 //:: Tests ------------------------------------------------
 
 beforeAll(() => {
+    del(TEMP_PATH);
+
     hapi = null;
     return HapiContext.load(Buffer.from(bytes)).then(ctx => {
         hapi = ctx;
@@ -50,7 +56,7 @@ test('checksum of files extracted by hapi should match checksum of files extract
                     zipfile.openReadStream(entry, (err, readstream) => {
                         if (err) throw err;
 
-                        const hasher = createHash();
+                        let hasher = createHash();
                         hasher.setEncoding('hex');
 
                         readstream.pipe(hasher).on('finish', () => {
@@ -73,14 +79,33 @@ test('checksum of files extracted by hapi should match checksum of files extract
 
     let hapiItems = hapi.rootItem.findChildren('*', null, ItemFilter.ENTRY_ONLY, true);
 
-    let hapiChecksums: ChecksumMap = new Map(
-        hapiItems.map(item => {
-            let buffer = hapi.extract(item);
-            let checksum = createHash().update(buffer).digest('hex');
+    let modeIdx = 0; // used to alternate between reading from a stream and reading from a buffer
+    let hapiChecksums: ChecksumMap = new Map();
+    let hapiPromises = hapiItems.map(item => {
+        modeIdx++;
 
-            return [item.path, checksum];
-        })
-    );
+        return new Promise(resolve => {
+            let hasher = createHash();
+
+            if (modeIdx % 2 === 0) {
+                let stream = hapi.createItemReadStream(item);
+
+                stream.pipe(hasher).on('finish', () => {
+                    hasher.setEncoding('hex');
+                    hapiChecksums.set(item.path, hasher.read());
+                    resolve();
+                });
+            } else {
+                hapi.extractAsBuffer(item).then(buffer => {
+                    let checksum = createHash().update(buffer).digest('hex');
+                    hapiChecksums.set(item.path, checksum);
+                    resolve();
+                });
+            }
+        });
+    });
+
+    await Promise.all(hapiPromises);
 
     hpiviewChecksums.forEach((value, key) => {
         key = key.startsWith('/') ? key : '/' + key;
@@ -98,4 +123,8 @@ test('checksum of files extracted by hapi should match checksum of files extract
     if (hapiChecksums.size > 0)
         throw 'Hapi extracted one or more extra files that weren\'t extracted by HPI View:\n' +
             Array.from(hapiChecksums.keys()).join('\n');
+});
+
+afterAll(() => {
+    del(TEMP_PATH);
 });

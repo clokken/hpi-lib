@@ -21,6 +21,7 @@
     "url": "git@github.com:clokken/hpi-lib.git"
   },
   "dependencies": {
+    "del": "^5.1.0",
     "pako": "^1.0.6"
   },
   "devDependencies": {
@@ -28,7 +29,6 @@
     "@types/node": "^14.0.4",
     "@types/pako": "^1.0.0",
     "@types/yauzl": "^2.9.1",
-    "del": "^3.0.0",
     "gulp": "^4.0.2",
     "gulp-exec": "^3.0.2",
     "gulp-sequence": "^1.0.0",
