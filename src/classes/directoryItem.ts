@@ -1,6 +1,7 @@
 import { HapiItem } from "./hapiItem";
 import { DirectoryStruct } from "./structs";
 import { EntryItem } from './entryItem';
+import { HapiContext } from './hapiContext';
 
 export enum ItemFilter {
     ANY,
@@ -130,7 +131,11 @@ export class DirectoryItem extends HapiItem {
         return result;
     }
 
-    findChildrenAt(fullpath: string, limit: number = -1): HapiItem[] {
+    findChildrenAt(fullpath: string, limit?: number, filter?: ItemFilter.ENTRY_ONLY): EntryItem[];
+    findChildrenAt(fullpath: string, limit?: number, filter?: ItemFilter.DIRECTORY_ONLY): DirectoryItem[];
+    findChildrenAt(fullpath: string, limit?: number, filter?: ItemFilter): HapiItem[];
+
+    findChildrenAt(fullpath: string, limit: number = -1, filter: ItemFilter = ItemFilter.ANY): HapiItem[] {
         let expectDirectory = fullpath.endsWith('/');
         if (expectDirectory)
             fullpath = fullpath.substr(0, fullpath.length - 1);
@@ -139,12 +144,34 @@ export class DirectoryItem extends HapiItem {
         if (nodes[0] == '')
             nodes = nodes.slice(1);
 
-        return this.findChildrenAtNodes(nodes, 0, limit, expectDirectory ? ItemFilter.DIRECTORY_ONLY : ItemFilter.ANY);
+        let result = this.findChildrenAtNodes(nodes, 0, limit, expectDirectory ? ItemFilter.DIRECTORY_ONLY : ItemFilter.ANY);
+
+        if (filter === ItemFilter.ENTRY_ONLY)
+            return result.filter(item => !item.isDirectory);
+
+        if (filter === ItemFilter.DIRECTORY_ONLY)
+            return result.filter(item => item.isDirectory);
+
+        return result;
     }
 
-    findChildAt(fullpath: string) {
-        let result = this.findChildrenAt(fullpath, 1);
-        return result.length ? result[0] : null;
+    findChildAt(fullpath: string, filter?: ItemFilter.DIRECTORY_ONLY): DirectoryItem;
+    findChildAt(fullpath: string, filter?: ItemFilter.ENTRY_ONLY): EntryItem;
+
+    findChildAt(fullpath: string, filter: ItemFilter = ItemFilter.ANY): HapiItem {
+        let children = this.findChildrenAt(fullpath, 1, filter);
+        let result = children.length ? children[0] : null;
+
+        if (result === null)
+            return null;
+
+        if (filter === ItemFilter.ENTRY_ONLY)
+            return result.isDirectory ? null : result;
+
+        if (filter === ItemFilter.DIRECTORY_ONLY)
+            return result.isDirectory ? result : null;
+
+        return result;
     }
 }
 
