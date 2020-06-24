@@ -1,29 +1,19 @@
-import { HapiItem } from "./hapiItem";
-import { DirectoryStruct } from "./structs";
-import { EntryItem } from './entryItem';
-import { HapiContext } from './hapiContext';
+import { HapiItem, ReadonlyHapiItem } from "./hapiItem";
+import { ReadonlyStruct, DirectoryField, Struct } from "./structs";
+import { ReadonlyEntryItem } from './entryItem';
 
 export enum ItemFilter {
     ANY,
     ENTRY_ONLY,
     DIRECTORY_ONLY,
-};
+}
 
-interface IndexedDirectory {
-    dir: DirectoryItem,
-    idx: number
-};
+export class ReadonlyDirectoryItem extends ReadonlyHapiItem {
+    protected _children: ReadonlyHapiItem[];
+    protected _struct: ReadonlyStruct<DirectoryField>;
 
-export class DirectoryItem extends HapiItem {
-    children: HapiItem[];
-
-    get struct() {
-        return <DirectoryStruct> this._struct;
-    }
-
-    set struct(struct: DirectoryStruct) {
-        this._struct = struct;
-    }
+    get children() { return this._children; }
+    get struct() { return this._struct; }
 
     get isDirectory() {
         return true;
@@ -35,12 +25,12 @@ export class DirectoryItem extends HapiItem {
         return me + children;
     }
 
-    findChildren(name: string, limit?: number, filter?: ItemFilter.ENTRY_ONLY, recurseDown?: boolean): EntryItem[];
-    findChildren(name: string, limit?: number, filter?: ItemFilter.DIRECTORY_ONLY, recurseDown?: boolean): DirectoryItem[];
-    findChildren(name: string, limit?: number, filter?: ItemFilter, recurseDown?: boolean): HapiItem[];
+    findChildren(name: string, limit?: number, filter?: ItemFilter.ENTRY_ONLY, recurseDown?: boolean): ReadonlyEntryItem[];
+    findChildren(name: string, limit?: number, filter?: ItemFilter.DIRECTORY_ONLY, recurseDown?: boolean): ReadonlyDirectoryItem[];
+    findChildren(name: string, limit?: number, filter?: ItemFilter, recurseDown?: boolean): ReadonlyHapiItem[];
 
-    findChildren(name: string, limit: number = -1, filter = ItemFilter.ANY, recurseDown = true): HapiItem[] {
-        let result: HapiItem[] = [];
+    findChildren(name: string, limit: number = -1, filter = ItemFilter.ANY, recurseDown = true): ReadonlyHapiItem[] {
+        let result: ReadonlyHapiItem[] = [];
 
         name = name.toLowerCase();
         let regexp: RegExp = null;
@@ -78,7 +68,7 @@ export class DirectoryItem extends HapiItem {
                 continue;
 
             let remainder = limit == -1 ? -1 : (limit - result.length);
-            let recursedChildren = (<DirectoryItem> child).findChildren(name, remainder, filter, true);
+            let recursedChildren = (<ReadonlyDirectoryItem> child).findChildren(name, remainder, filter, true);
 
             if (recursedChildren.length)
                 result = result.concat(recursedChildren);
@@ -90,17 +80,17 @@ export class DirectoryItem extends HapiItem {
         return result;
     }
 
-    findChild(name: string, filter?: ItemFilter.ENTRY_ONLY, recurseDown?: boolean): EntryItem;
-    findChild(name: string, filter?: ItemFilter.DIRECTORY_ONLY, recurseDown?: boolean): DirectoryItem;
-    findChild(name: string, filter?: ItemFilter, recurseDown?: boolean): HapiItem;
+    findChild(name: string, filter?: ItemFilter.ENTRY_ONLY, recurseDown?: boolean): ReadonlyEntryItem;
+    findChild(name: string, filter?: ItemFilter.DIRECTORY_ONLY, recurseDown?: boolean): ReadonlyDirectoryItem;
+    findChild(name: string, filter?: ItemFilter, recurseDown?: boolean): ReadonlyHapiItem;
 
-    findChild(name: string, filter = ItemFilter.ANY, recurseDown = true): HapiItem {
+    findChild(name: string, filter = ItemFilter.ANY, recurseDown = true): ReadonlyHapiItem {
         let result = this.findChildren(name, 1, filter, recurseDown);
         return result.length ? result[0] : null;
     }
 
-    private findChildrenAtNodes(nodes: string[], nodePos: number, limit: number, filter = ItemFilter.ANY): HapiItem[] {
-        let result: HapiItem[] = [];
+    private findChildrenAtNodes(nodes: string[], nodePos: number, limit: number, filter = ItemFilter.ANY): ReadonlyHapiItem[] {
+        let result: ReadonlyHapiItem[] = [];
 
         let currentNode = nodes[nodePos];
         let isLast = nodePos == nodes.length - 1;
@@ -118,7 +108,7 @@ export class DirectoryItem extends HapiItem {
             let child = find[i];
             if (child.isDirectory) {
                 let remainder = limit == -1 ? -1 : (limit - result.length);
-                let subResult = (<DirectoryItem> child).findChildrenAtNodes(nodes, nodePos + 1, remainder, filter);
+                let subResult = (<ReadonlyDirectoryItem> child).findChildrenAtNodes(nodes, nodePos + 1, remainder, filter);
 
                 if (subResult.length)
                     result = result.concat(subResult);
@@ -131,11 +121,11 @@ export class DirectoryItem extends HapiItem {
         return result;
     }
 
-    findChildrenAt(fullpath: string, limit?: number, filter?: ItemFilter.ENTRY_ONLY): EntryItem[];
-    findChildrenAt(fullpath: string, limit?: number, filter?: ItemFilter.DIRECTORY_ONLY): DirectoryItem[];
-    findChildrenAt(fullpath: string, limit?: number, filter?: ItemFilter): HapiItem[];
+    findChildrenAt(fullpath: string, limit?: number, filter?: ItemFilter.ENTRY_ONLY): ReadonlyEntryItem[];
+    findChildrenAt(fullpath: string, limit?: number, filter?: ItemFilter.DIRECTORY_ONLY): ReadonlyDirectoryItem[];
+    findChildrenAt(fullpath: string, limit?: number, filter?: ItemFilter): ReadonlyHapiItem[];
 
-    findChildrenAt(fullpath: string, limit: number = -1, filter: ItemFilter = ItemFilter.ANY): HapiItem[] {
+    findChildrenAt(fullpath: string, limit: number = -1, filter: ItemFilter = ItemFilter.ANY): ReadonlyHapiItem[] {
         let expectDirectory = fullpath.endsWith('/');
         if (expectDirectory)
             fullpath = fullpath.substr(0, fullpath.length - 1);
@@ -155,10 +145,10 @@ export class DirectoryItem extends HapiItem {
         return result;
     }
 
-    findChildAt(fullpath: string, filter?: ItemFilter.DIRECTORY_ONLY): DirectoryItem;
-    findChildAt(fullpath: string, filter?: ItemFilter.ENTRY_ONLY): EntryItem;
+    findChildAt(fullpath: string, filter?: ItemFilter.DIRECTORY_ONLY): ReadonlyDirectoryItem;
+    findChildAt(fullpath: string, filter?: ItemFilter.ENTRY_ONLY): ReadonlyEntryItem;
 
-    findChildAt(fullpath: string, filter: ItemFilter = ItemFilter.ANY): HapiItem {
+    findChildAt(fullpath: string, filter: ItemFilter = ItemFilter.ANY): ReadonlyHapiItem {
         let children = this.findChildrenAt(fullpath, 1, filter);
         let result = children.length ? children[0] : null;
 
@@ -173,6 +163,25 @@ export class DirectoryItem extends HapiItem {
 
         return result;
     }
+}
+
+export class DirectoryItem extends ReadonlyDirectoryItem {
+    get struct() {
+        return this._struct as Struct<DirectoryField>;
+    }
+
+    get children() {
+        return this._children as HapiItem[];
+    }
+
+    setStruct(struct: Struct<DirectoryField>) { this._struct = struct; }
+    setChildren(children: HapiItem[]) { this._children = children; }
+
+    // Make HapiItem fields writeable:
+    setParent(parent: DirectoryItem) { this._parent = parent; }
+    setName(name: string) { this._name = name; }
+    setPath(path: string) { this._path = path; }
+    setStructOrigin(structOrigin: number) { this._structOrigin = structOrigin; }
 }
 
 function wildcardToRegExp (s: string) {

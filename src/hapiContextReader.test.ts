@@ -3,32 +3,30 @@ import * as Path from 'path';
 import * as Yauzl from 'yauzl';
 import * as Crypto from 'crypto';
 import * as del from 'del';
-import { HapiContext } from './hapiContext';
+import * as JestHelpers from '../test/jestHelpers';
+import { HapiContextReader } from './hapiContextReader';
 import { ItemFilter } from './directoryItem';
-import { EntryItem } from './entryItem';
-
-//:: Globals ----------------------------------------------
+import { HapiContextLoader } from './hapiContextLoader';
 
 const TEST_PATH = Path.join(process.cwd(), 'test');
-const TEMP_PATH = Path.join(TEST_PATH, 'temp');
+const TEMP_PATH = Path.join(TEST_PATH, 'temp', 'hapiContextReader.test.ts');
 const HPI_PATH = Path.join(TEST_PATH, 'v3rocket.hpi');
 let bytes = Fs.readFileSync(HPI_PATH);
-let hapi: HapiContext;
+let hapi: HapiContextReader;
 
-//:: Tests ------------------------------------------------
-
-beforeAll(() => {
-    del(TEMP_PATH);
+beforeAll(async () => {
+    await del(TEMP_PATH);
+    JestHelpers.mkdirpSync(TEMP_PATH);
 
     hapi = null;
-    return HapiContext.load(Buffer.from(bytes)).then(ctx => {
+    return HapiContextLoader.load(Buffer.from(bytes)).then(ctx => {
         hapi = ctx;
     });
 });
 
 test('hapi should parse a valid version', () => {
-    expect(hapi.version.get('marker')).toBe(0x49504148);
-    expect(hapi.version.get('version')).toBe(0x20000);
+    expect(hapi.version.getField('marker')).toBe(0x49504148);
+    expect(hapi.version.getField('version')).toBe(0x20000);
 });
 
 test('hapi should have a sactisfatory item structure', () => {
@@ -96,11 +94,10 @@ test('checksum of files extracted by hapi should match checksum of files extract
                     resolve();
                 });
             } else {
-                hapi.extractAsBuffer(item).then(buffer => {
-                    let checksum = createHash().update(buffer).digest('hex');
-                    hapiChecksums.set(item.path, checksum);
-                    resolve();
-                });
+                let buffer = hapi.extractAsBuffer(item);
+                let checksum = createHash().update(buffer).digest('hex');
+                hapiChecksums.set(item.path, checksum);
+                resolve();
             }
         });
     });
@@ -125,6 +122,6 @@ test('checksum of files extracted by hapi should match checksum of files extract
             Array.from(hapiChecksums.keys()).join('\n');
 });
 
-afterAll(() => {
-    del(TEMP_PATH);
+afterAll(async () => {
+    await del(TEMP_PATH);
 });

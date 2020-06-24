@@ -1,22 +1,21 @@
 import { HapiContext } from './hapiContext';
 import { Stream } from 'stream';
-import { EntryItem } from './entryItem';
+import { ReadonlyEntryItem } from './entryItem';
 import { ChunkStruct } from './structs';
 import * as BufferUtils from "./bufferUtils";
 
-export class HapiReader extends Stream.Readable {
+export class HapiItemReader extends Stream.Readable {
     private hapi: HapiContext;
     private flatSize: number;
     private cursor: number;
-    private expectedSize: number;
     private progress = 0;
 
-    constructor(hapi: HapiContext, item: EntryItem) {
+    constructor(hapi: HapiContext, item: ReadonlyEntryItem) {
         super();
 
         this.hapi = hapi;
-        this.flatSize = item.struct.get('flatSize');
-        this.cursor = item.struct.get('dataStartPtr');
+        this.flatSize = item.struct.getField('flatSize');
+        this.cursor = item.struct.getField('dataStartPtr');
     }
 
     _read(size: number) {
@@ -30,20 +29,20 @@ export class HapiReader extends Stream.Readable {
              * the block of data that follows it */
             let chunk = new ChunkStruct(chunkBuffer);
             let sqshBuffer = this.hapi.file.slice(this.cursor,
-                this.cursor + chunk.get('compressedSize'));
+                this.cursor + chunk.getField('compressedSize'));
             this.cursor += sqshBuffer.length;
 
             let flatBuffer = BufferUtils.decompress(sqshBuffer, chunk);
 
-            if (flatBuffer.length !== chunk.get('flatSize'))
-                this.destroy(new Error(`Error decompressing chunk. Expected: ${chunk.get('flatSize')} bytes; Got: ${flatBuffer.length} bytes`));
+            if (flatBuffer.length !== chunk.getField('flatSize'))
+                this.destroy(new Error(`Error decompressing chunk. Expected: ${chunk.getField('flatSize')} bytes; Got: ${flatBuffer.length} bytes`));
 
             this.push(flatBuffer);
             this.progress += flatBuffer.length;
         }
         else {
             if (this.progress !== this.flatSize)
-                this.destroy(new Error(`Error extracting item. Expected: ${this.expectedSize} bytes; Got: ${this.progress} bytes`));
+                this.destroy(new Error(`Error extracting item. Expected: ${this.flatSize} bytes; Got: ${this.progress} bytes`));
 
             this.push(null);
         }

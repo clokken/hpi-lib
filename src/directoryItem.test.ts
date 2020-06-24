@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import { HapiContext } from './hapiContext';
+import { HapiContextLoader } from './hapiContextLoader';
 
 function match(s: string) {
     return s.indexOf('*') != -1 ? wildcardToRegExp(s) : s;
@@ -17,7 +18,7 @@ let hapi: HapiContext;
 
 beforeAll(() => {
     hapi = null;
-    return HapiContext.load(Buffer.from(bytes)).then(ctx => {
+    return HapiContextLoader.load(Buffer.from(bytes)).then(ctx => {
         hapi = ctx;
     });
 });

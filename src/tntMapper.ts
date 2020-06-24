@@ -1,6 +1,6 @@
-import { BinaryStructure, Field } from "./structs";
+import { Struct, Field } from "./structs";
 import { U32, U8 } from "./types";
-import { TableFormatter, HorizontalAlignment } from "../utils";
+import { TableFormatter, HorizontalAlignment } from "./utils";
 
 export interface Buffer2D {
     width: number;
@@ -9,12 +9,6 @@ export interface Buffer2D {
 }
 
 export type ItemCoord = [number, number, number]; // [index, posX, posY]
-
-/*export interface TNTItem {
-    name: string;
-    index: number;
-    count: number;
-}*/
 
 const ROAD_NULL = 0xFFFF;
 const ROAD_WATER = 0xFFFC;
@@ -37,7 +31,7 @@ export class TNTMapper {
         this.buffer = buffer;
         this.struct = new TNTStruct(buffer);
 
-        let minimapPtr = this.struct.get('minimapPtr');
+        let minimapPtr = this.struct.getField('minimapPtr');
         let minimapWidth = this.buffer.readUInt32LE(minimapPtr);
         let minimapHeight = this.buffer.readUInt32LE(minimapPtr + 4);
         this.minimap = {
@@ -46,7 +40,7 @@ export class TNTMapper {
             data: this.buffer.slice(minimapPtr + 8, minimapPtr + 8 + (minimapWidth * minimapHeight))
         };
 
-        let tabmapPtr = this.struct.get('tabmapPtr');
+        let tabmapPtr = this.struct.getField('tabmapPtr');
         let tabmapWidth = this.buffer.readUInt32LE(tabmapPtr);
         let tabmapHeight = this.buffer.readUInt32LE(tabmapPtr + 4);
         this.tabmap = {
@@ -55,17 +49,17 @@ export class TNTMapper {
             data: this.buffer.slice(tabmapPtr + 8, tabmapPtr + 8 + (tabmapWidth * tabmapHeight))
         };
 
-        let mapWidth = this.struct.get('width');
-        let mapHeight = this.struct.get('height');
+        let mapWidth = this.struct.getField('width');
+        let mapHeight = this.struct.getField('height');
 
-        let heightMapPtr = this.struct.get('heightMapPtr');
+        let heightMapPtr = this.struct.getField('heightMapPtr');
         this.heightMap = {
             width: mapWidth,
             height: mapHeight,
             data: this.buffer.slice(heightMapPtr, heightMapPtr + (mapWidth * mapHeight))
         };
 
-        let roadMapPtr = this.struct.get('roadMapPtr');
+        let roadMapPtr = this.struct.getField('roadMapPtr');
         this.roadMap = {
             width: mapWidth,
             height: mapHeight,
@@ -78,10 +72,10 @@ export class TNTMapper {
     }
 
     private autoLoadItems() {
-        let itemCount = this.struct.get('itemCount');
+        let itemCount = this.struct.getField('itemCount');
 
         this.itemList = new Array(itemCount);
-        let itemBuffer = this.buffer.slice(this.struct.get('itemListPtr'));
+        let itemBuffer = this.buffer.slice(this.struct.getField('itemListPtr'));
         for (let i = 0; i < itemCount; i++) {
             let offset = i * (4 + 128); // 4 = index size; 128 = name size
             let index = itemBuffer.readUInt32LE(offset);
@@ -114,7 +108,7 @@ export class TNTMapper {
             header: ['NAME', 'ID', 'NUMBER'],
             hAlignments: [HorizontalAlignment.Center, HorizontalAlignment.Center, HorizontalAlignment.Center]
         });
-        for (let i = 0; i < this.struct.get('itemCount'); i++) {
+        for (let i = 0; i < this.struct.getField('itemCount'); i++) {
             let name = this.itemList[i];
             let count = this.itemCounts[i] || 0;
 
@@ -158,7 +152,7 @@ export type TNTField = 'marker' | 'width' | 'height' | 'seaHeight' | 'heightMapP
     | 'roadMapPtr' | 'itemListPtr' | 'itemCount' | 'textureListPtr' | 'uMapPtr'
     | 'vMapPtr' | 'minimapPtr' | 'tabmapPtr';
 
-export class TNTStruct extends BinaryStructure<TNTField> {
+export class TNTStruct extends Struct<TNTField> {
     constructor(bytes: Buffer, offset?: number) {
         super(TNT, bytes, offset);
     }
