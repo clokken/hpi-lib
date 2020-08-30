@@ -30,6 +30,9 @@ export class ReadonlyDirectoryItem extends ReadonlyHapiItem {
     findChildren(name: string, limit?: number, filter?: ItemFilter, recurseDown?: boolean): ReadonlyHapiItem[];
 
     findChildren(name: string, limit: number = -1, filter = ItemFilter.ANY, recurseDown = true): ReadonlyHapiItem[] {
+        if (limit === null)
+            limit = -1;
+
         let result: ReadonlyHapiItem[] = [];
 
         name = name.toLowerCase();
@@ -126,6 +129,9 @@ export class ReadonlyDirectoryItem extends ReadonlyHapiItem {
     findChildrenAt(fullpath: string, limit?: number, filter?: ItemFilter): ReadonlyHapiItem[];
 
     findChildrenAt(fullpath: string, limit: number = -1, filter: ItemFilter = ItemFilter.ANY): ReadonlyHapiItem[] {
+        if (limit === null)
+            limit = -1;
+
         let expectDirectory = fullpath.endsWith('/');
         if (expectDirectory)
             fullpath = fullpath.substr(0, fullpath.length - 1);
